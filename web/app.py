@@ -70,6 +70,17 @@ def trading_page():
     return render_template("trading.html")
 
 
+@app.route("/docs/futures_trading")
+def futures_trading_docs():
+    """Render the futures trading documentation."""
+    try:
+        with open("docs/futures_trading.md", "r") as f:
+            content = f.read()
+        return render_template("markdown.html", title="Futures Trading", content=content)
+    except FileNotFoundError:
+        return "Documentation not found", 404
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """Get the current configuration."""

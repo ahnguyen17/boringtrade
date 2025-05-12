@@ -12,13 +12,14 @@ from strategies.pdh_pdl_strategy import PDHPDLStrategy
 from strategies.order_block_strategy import OrderBlockStrategy
 from utils.notification import Notifier
 from utils.risk_manager import RiskManager
+from models.asset_registry import AssetRegistry
 
 
 class StrategyFactory:
     """
     Factory for creating strategy instances.
     """
-    
+
     @staticmethod
     def create_strategy(
         strategy_name: str,
@@ -26,27 +27,29 @@ class StrategyFactory:
         broker: BrokerInterface,
         risk_manager: RiskManager,
         notifier: Notifier,
+        asset_registry: AssetRegistry,
         config: Dict[str, Any]
     ) -> BaseStrategy:
         """
         Create a strategy instance.
-        
+
         Args:
             strategy_name: The name of the strategy
             data_feed: The data feed
             broker: The broker interface
             risk_manager: The risk manager
             notifier: The notifier
+            asset_registry: The asset registry
             config: The configuration
-            
+
         Returns:
             BaseStrategy: The strategy instance
-            
+
         Raises:
             ValueError: If the strategy is not supported
         """
         logger = logging.getLogger("StrategyFactory")
-        
+
         # Create strategy instance based on name
         if strategy_name.upper() == "ORB":
             logger.info("Creating Opening Range Breakout strategy")
@@ -55,6 +58,7 @@ class StrategyFactory:
                 broker=broker,
                 risk_manager=risk_manager,
                 notifier=notifier,
+                asset_registry=asset_registry,
                 config=config
             )
         elif strategy_name.upper() == "PDH_PDL":
@@ -64,6 +68,7 @@ class StrategyFactory:
                 broker=broker,
                 risk_manager=risk_manager,
                 notifier=notifier,
+                asset_registry=asset_registry,
                 config=config
             )
         elif strategy_name.upper() == "OB":
@@ -73,6 +78,7 @@ class StrategyFactory:
                 broker=broker,
                 risk_manager=risk_manager,
                 notifier=notifier,
+                asset_registry=asset_registry,
                 config=config
             )
         else:

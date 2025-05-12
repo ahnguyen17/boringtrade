@@ -15,7 +15,7 @@ DEFAULT_CONFIG = {
     "api_secret": os.getenv("API_SECRET", ""),
 
     # Trading assets
-    "assets": ["SPY", "QQQ", "AAPL", "TSLA", "NVDA"],
+    "assets": ["SPY", "QQQ", "AAPL", "TSLA", "NVDA", "ES", "MES"],
 
     # Enabled strategies
     "strategies": ["ORB", "PDH_PDL", "OB"],
@@ -117,6 +117,30 @@ DEFAULT_CONFIG = {
         "test_broker_connection": False,
         "connection_timeout": 10,  # seconds
         "verbose_logging": False,
+    },
+
+    # Futures trading settings
+    "futures": {
+        "enabled": True,
+        "default_contract_size": 1,  # Number of contracts to trade
+        "use_continuous_contracts": True,  # Use continuous contracts for historical data
+        "rollover_days_before_expiration": 5,  # Days before expiration to roll over
+        "contracts": {
+            "ES": {
+                "description": "E-mini S&P 500 Futures",
+                "exchange": "CME",
+                "tick_size": 0.25,
+                "multiplier": 50.0,  # $50 per point
+                "margin_requirement": 12000.0,  # Approximate initial margin
+            },
+            "MES": {
+                "description": "Micro E-mini S&P 500 Futures",
+                "exchange": "CME",
+                "tick_size": 0.25,
+                "multiplier": 5.0,  # $5 per point
+                "margin_requirement": 1200.0,  # Approximate initial margin
+            },
+        },
     },
 }
 

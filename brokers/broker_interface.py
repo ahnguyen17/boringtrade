@@ -8,6 +8,7 @@ from typing import Dict, Any, List, Optional, Tuple, Callable
 
 from models.candle import Candle
 from models.trade import Trade, TradeDirection, TradeStatus
+from models.asset import Asset, AssetType
 
 
 class BrokerInterface(ABC):
@@ -321,3 +322,56 @@ class BrokerInterface(ABC):
                 - Additional details about the connection status
         """
         pass
+
+    def get_asset_type(self, symbol: str) -> AssetType:
+        """
+        Get the asset type for a symbol.
+
+        Args:
+            symbol: The asset symbol
+
+        Returns:
+            AssetType: The asset type
+        """
+        # Default implementation - override in subclasses for more accurate detection
+        if symbol in ["ES", "MES"]:
+            return AssetType.FUTURES
+        return AssetType.STOCK
+
+    def is_futures_contract(self, symbol: str) -> bool:
+        """
+        Check if a symbol is a futures contract.
+
+        Args:
+            symbol: The asset symbol
+
+        Returns:
+            bool: True if the symbol is a futures contract
+        """
+        return self.get_asset_type(symbol) == AssetType.FUTURES
+
+    def get_futures_expiration(self, symbol: str) -> Optional[str]:
+        """
+        Get the expiration date for a futures contract.
+
+        Args:
+            symbol: The futures symbol
+
+        Returns:
+            Optional[str]: The expiration date in YYYY-MM-DD format, or None if not applicable
+        """
+        # Default implementation - override in subclasses
+        return None
+
+    def get_futures_contracts(self, root_symbol: str) -> List[Dict[str, Any]]:
+        """
+        Get available futures contracts for a root symbol.
+
+        Args:
+            root_symbol: The root symbol (e.g., "ES" for E-mini S&P 500)
+
+        Returns:
+            List[Dict[str, Any]]: List of available contracts with details
+        """
+        # Default implementation - override in subclasses
+        return []

@@ -32,6 +32,10 @@ from data.data_feed import DataFeed
 # Import risk manager
 from utils.risk_manager import RiskManager
 
+# Import asset models
+from models.asset import Asset, AssetType
+from models.asset_registry import AssetRegistry
+
 class TradingBot:
     """Main trading bot class."""
 
@@ -62,6 +66,10 @@ class TradingBot:
             max_daily_profit=CONFIG["max_daily_profit"],
             max_trades_per_day=CONFIG["max_trades_per_day"]
         )
+
+        # Initialize asset registry
+        self.asset_registry = AssetRegistry(CONFIG)
+
         self.data_feed = DataFeed(
             broker=self.broker,
             assets=CONFIG["assets"],
@@ -82,6 +90,7 @@ class TradingBot:
                     broker=self.broker,
                     risk_manager=self.risk_manager,
                     notifier=self.notifier,
+                    asset_registry=self.asset_registry,
                     config=CONFIG
                 )
                 self.strategies.append(strategy)

@@ -34,7 +34,7 @@ SAMPLE_CONFIG = {
     "broker": "tastytrade",
     "api_key": "",
     "api_secret": "",
-    "assets": ["SPY", "QQQ", "AAPL", "TSLA", "NVDA"],
+    "assets": ["SPY", "QQQ", "AAPL", "TSLA", "NVDA", "ES", "MES"],
     "orb": {"enabled": True},
     "pdh_pdl": {"enabled": True},
     "ob": {"enabled": True},
@@ -44,6 +44,29 @@ SAMPLE_CONFIG = {
     "position_size": 1,
     "execution_timeframe": 5,
     "htf_timeframe": 60,
+    # Futures trading settings
+    "futures": {
+        "enabled": True,
+        "default_contract_size": 1,
+        "use_continuous_contracts": True,
+        "rollover_days_before_expiration": 5,
+        "contracts": {
+            "ES": {
+                "description": "E-mini S&P 500 Futures",
+                "exchange": "CME",
+                "tick_size": 0.25,
+                "multiplier": 50.0,
+                "margin_requirement": 12000.0,
+            },
+            "MES": {
+                "description": "Micro E-mini S&P 500 Futures",
+                "exchange": "CME",
+                "tick_size": 0.25,
+                "multiplier": 5.0,
+                "margin_requirement": 1200.0,
+            },
+        },
+    },
     # Debug settings
     "debug": {
         "enabled": False,
