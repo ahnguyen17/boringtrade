@@ -6,6 +6,7 @@
     <title>BoringTrade - Configuration</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/debug.css') }}">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -51,6 +52,14 @@
                                             <option value="tastytrade" {% if config.broker == "tastytrade" %}selected{% endif %}>Tastytrade</option>
                                             <option value="schwab" {% if config.broker == "schwab" %}selected{% endif %}>Charles Schwab</option>
                                         </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="api-key" class="form-label">API Key / Username</label>
+                                        <input type="text" class="form-control" id="api-key" name="api_key" value="{{ config.get('api_key', '') }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="api-secret" class="form-label">API Secret / Password</label>
+                                        <input type="password" class="form-control" id="api-secret" name="api_secret" value="{{ config.get('api_secret', '') }}">
                                     </div>
                                 </div>
                             </div>
@@ -129,6 +138,48 @@
                                             <option value="30" {% if config.htf_timeframe == 30 %}selected{% endif %}>30 minutes</option>
                                             <option value="60" {% if config.htf_timeframe == 60 %}selected{% endif %}>1 hour</option>
                                         </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3 debug-section">
+                                <h6>Debug Settings</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="debug-enabled" name="debug.enabled" {% if config.debug.enabled %}checked{% endif %}>
+                                            <label class="form-check-label" for="debug-enabled">Enable Debug Mode</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="test-broker-connection" name="debug.test_broker_connection" {% if config.debug.test_broker_connection %}checked{% endif %}>
+                                            <label class="form-check-label" for="test-broker-connection">Test Broker Connection</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="verbose-logging" name="debug.verbose_logging" {% if config.debug.verbose_logging %}checked{% endif %}>
+                                            <label class="form-check-label" for="verbose-logging">Verbose Logging</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <label for="connection-timeout" class="form-label">Connection Timeout (seconds)</label>
+                                        <input type="number" class="form-control" id="connection-timeout" name="debug.connection_timeout" value="{{ config.debug.connection_timeout }}" min="1" max="60">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <button type="button" class="btn btn-info mt-4" id="test-connection-btn">Test Broker Connection</button>
+                                        <div id="connection-status" class="ms-3 mt-2 p-2 border bg-light">Status will appear here</div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-12">
+                                        <div class="alert alert-info" id="connection-details" style="display: none;">
+                                            <h6>Connection Details</h6>
+                                            <pre id="connection-details-text"></pre>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

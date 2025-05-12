@@ -289,6 +289,48 @@ def get_candles():
         return jsonify({"error": str(e)})
 
 
+@app.route("/api/debug/test_broker_connection", methods=["POST"])
+def test_broker_connection():
+    """Test the connection to the broker API."""
+    try:
+        # Get request data
+        data = request.json
+        broker_name = data.get("broker", CONFIG["broker"])
+        api_key = data.get("api_key", CONFIG["api_key"])
+        api_secret = data.get("api_secret", CONFIG["api_secret"])
+        timeout = data.get("timeout", CONFIG["debug"]["connection_timeout"])
+
+        # Import broker factory
+        from brokers.broker_factory import BrokerFactory
+
+        # Create broker instance
+        broker = BrokerFactory.create_broker(
+            broker_name=broker_name,
+            api_key=api_key,
+            api_secret=api_secret
+        )
+
+        # Test connection
+        success, message, details = broker.test_connection(timeout=timeout)
+
+        # Return result
+        return jsonify({
+            "success": success,
+            "message": message,
+            "details": details
+        })
+    except Exception as e:
+        error_msg = f"Failed to test broker connection: {e}"
+        logger.error(error_msg)
+        return jsonify({
+            "success": False,
+            "message": error_msg,
+            "details": {
+                "error": str(e)
+            }
+        })
+
+
 @socketio.on("connect")
 def handle_connect():
     """Handle WebSocket connection."""

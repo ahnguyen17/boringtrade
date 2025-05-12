@@ -32,6 +32,8 @@ logger.addHandler(handler)
 # Sample data
 SAMPLE_CONFIG = {
     "broker": "tastytrade",
+    "api_key": "",
+    "api_secret": "",
     "assets": ["SPY", "QQQ", "AAPL", "TSLA", "NVDA"],
     "orb": {"enabled": True},
     "pdh_pdl": {"enabled": True},
@@ -41,7 +43,14 @@ SAMPLE_CONFIG = {
     "max_trades_per_day": 5,
     "position_size": 1,
     "execution_timeframe": 5,
-    "htf_timeframe": 60
+    "htf_timeframe": 60,
+    # Debug settings
+    "debug": {
+        "enabled": False,
+        "test_broker_connection": False,
+        "connection_timeout": 10,
+        "verbose_logging": False
+    }
 }
 
 SAMPLE_TRADES = {
@@ -274,27 +283,27 @@ def get_candles():
         # Get query parameters
         symbol = request.args.get("symbol")
         timeframe = request.args.get("timeframe")
-        
+
         if not symbol or not timeframe:
             return jsonify({"error": "Symbol and timeframe are required"}), 400
-        
+
         # Convert timeframe to integer
         try:
             timeframe = int(timeframe)
         except ValueError:
             return jsonify({"error": "Timeframe must be an integer"}), 400
-        
+
         # Generate sample candles
         candles = []
         end_time = datetime.now()
-        
+
         for i in range(100):
             timestamp = end_time - timedelta(minutes=timeframe * i)
             open_price = random.uniform(100, 200)
             close_price = random.uniform(100, 200)
             high_price = max(open_price, close_price) + random.uniform(0, 5)
             low_price = min(open_price, close_price) - random.uniform(0, 5)
-            
+
             candle = {
                 "symbol": symbol,
                 "timestamp": timestamp.isoformat(),
@@ -307,11 +316,87 @@ def get_candles():
                 "is_complete": True
             }
             candles.append(candle)
-        
+
         return jsonify(candles)
     except Exception as e:
         logger.error(f"Failed to get candles: {e}")
         return jsonify({"error": str(e)})
+
+
+@app.route("/api/debug/test_broker_connection", methods=["POST"])
+def test_broker_connection():
+    """Test the connection to the broker API."""
+    logger.info("Test broker connection API endpoint called")
+    try:
+        # Get request data
+        data = request.json
+        logger.info(f"Request data: {data}")
+        broker_name = data.get("broker", SAMPLE_CONFIG["broker"])
+        api_key = data.get("api_key", "sample_api_key")
+        api_secret = data.get("api_secret", "sample_api_secret")
+        timeout = data.get("timeout", SAMPLE_CONFIG["debug"]["connection_timeout"])
+        logger.info(f"Using broker: {broker_name}, timeout: {timeout}")
+
+        # Since this is a sample dashboard, we'll just return mock data
+        # In a real implementation, we would test the actual connection
+
+        # Simulate a delay
+        import time
+        time.sleep(1)
+
+        # Return mock result based on broker
+        if broker_name == "tastytrade":
+            success = True
+            message = "Successfully connected to Tastytrade API in 0.95 seconds"
+            details = {
+                "broker": "tastytrade",
+                "api_url": "https://api.tastytrade.com/v1",
+                "websocket_url": "wss://streamer.tastytrade.com/v1",
+                "timeout": timeout,
+                "connection_time": 0.95,
+                "authenticated": True,
+                "account_info": {
+                    "account_number": "SAMPLE123456",
+                    "account_type": "Margin",
+                    "equity": 25000.00,
+                    "buying_power": 50000.00,
+                    "cash": 25000.00,
+                    "margin": 0.00
+                },
+                "error": None
+            }
+        else:  # schwab
+            success = False
+            message = "Charles Schwab API integration is not implemented yet"
+            details = {
+                "broker": "schwab",
+                "api_url": "https://api.schwab.com/v1",
+                "timeout": timeout,
+                "connection_time": 0.25,
+                "authenticated": False,
+                "account_info": {},
+                "error": "Charles Schwab API integration is not implemented yet",
+                "implementation_status": "Not implemented"
+            }
+
+        # Return result
+        response_data = {
+            "success": success,
+            "message": message,
+            "details": details
+        }
+        logger.info(f"Returning response: {success}, {message}")
+        return jsonify(response_data)
+    except Exception as e:
+        error_msg = f"Failed to test broker connection: {e}"
+        logger.error(error_msg)
+        return jsonify({
+            "success": False,
+            "message": error_msg,
+            "details": {
+                "error": str(e)
+            }
+        })
 
 
 @socketio.on("connect")

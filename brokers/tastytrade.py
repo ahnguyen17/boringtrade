@@ -393,6 +393,134 @@ class TastytradeAPI(BrokerInterface):
 
     # TODO: Implement remaining methods
 
+    def test_connection(self, timeout: int = 10) -> Tuple[bool, str, Dict[str, Any]]:
+        """
+        Test the connection to the Tastytrade API.
+
+        Args:
+            timeout: The timeout in seconds
+
+        Returns:
+            Tuple[bool, str, Dict[str, Any]]:
+                - Success flag
+                - Message
+                - Additional details about the connection status
+        """
+        self.logger.info(f"Testing connection to Tastytrade API (timeout: {timeout}s)...")
+
+        details = {
+            "broker": "tastytrade",
+            "api_url": self.base_url,
+            "websocket_url": self.ws_url,
+            "timeout": timeout,
+            "connection_time": None,
+            "authenticated": False,
+            "account_info": {},
+            "error": None
+        }
+
+        try:
+            # Record start time
+            start_time = time.time()
+
+            # Authenticate
+            auth_url = f"{self.base_url}/sessions"
+            auth_data = {
+                "login": self.api_key,
+                "password": self.api_secret
+            }
+
+            response = requests.post(auth_url, json=auth_data, timeout=timeout)
+            response.raise_for_status()
+
+            auth_result = response.json()
+            temp_session_token = auth_result.get("session-token")
+
+            if not temp_session_token:
+                error_msg = "Failed to get session token"
+                self.logger.error(error_msg)
+                details["error"] = error_msg
+                return False, error_msg, details
+
+            details["authenticated"] = True
+
+            # Get accounts
+            accounts_url = f"{self.base_url}/customers/me/accounts"
+            headers = {"Authorization": f"Bearer {temp_session_token}"}
+
+            response = requests.get(accounts_url, headers=headers, timeout=timeout)
+            response.raise_for_status()
+
+            accounts = response.json().get("items", [])
+
+            if not accounts:
+                error_msg = "No accounts found"
+                self.logger.error(error_msg)
+                details["error"] = error_msg
+                return False, error_msg, details
+
+            # Use the first account
+            account = accounts[0]
+            account_number = account.get("account-number")
+
+            # Get account balances
+            balances_url = f"{self.base_url}/accounts/{account_number}/balances"
+
+            response = requests.get(balances_url, headers=headers, timeout=timeout)
+            response.raise_for_status()
+
+            balances = response.json()
+
+            # Combine account and balance information
+            account_info = {
+                "account_number": account_number,
+                "account_type": account.get("account-type-name"),
+                "equity": balances.get("equity"),
+                "buying_power": balances.get("buying-power"),
+                "cash": balances.get("cash"),
+                "margin": balances.get("margin")
+            }
+
+            details["account_info"] = account_info
+
+            # Logout
+            logout_url = f"{self.base_url}/sessions"
+            response = requests.delete(logout_url, headers=headers, timeout=timeout)
+            response.raise_for_status()
+
+            # Calculate connection time
+            end_time = time.time()
+            connection_time = end_time - start_time
+            details["connection_time"] = connection_time
+
+            success_msg = f"Successfully connected to Tastytrade API in {connection_time:.2f} seconds"
+            self.logger.info(success_msg)
+            return True, success_msg, details
+
+        except requests.exceptions.Timeout:
+            error_msg = f"Connection to Tastytrade API timed out after {timeout} seconds"
+            self.logger.error(error_msg)
+            details["error"] = error_msg
+            return False, error_msg, details
+
+        except requests.exceptions.ConnectionError:
+            error_msg = "Failed to connect to Tastytrade API: Connection error"
+            self.logger.error(error_msg)
+            details["error"] = error_msg
+            return False, error_msg, details
+
+        except requests.exceptions.HTTPError as e:
+            error_msg = f"HTTP error occurred while connecting to Tastytrade API: {e}"
+            self.logger.error(error_msg)
+            details["error"] = error_msg
+            return False, error_msg, details
+
+        except Exception as e:
+            error_msg = f"Failed to connect to Tastytrade API: {e}"
+            self.logger.error(error_msg)
+            details["error"] = error_msg
+            return False, error_msg, details
+
     def place_limit_order(
         self,
         symbol: str,
