@@ -64,6 +64,12 @@ def levels_page():
     return render_template("levels.html")
 
 
+@app.route("/trading")
+def trading_page():
+    """Render the trading page."""
+    return render_template("trading.html")
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """Get the current configuration."""
@@ -287,6 +293,168 @@ def get_candles():
     except Exception as e:
         logger.error(f"Failed to get candles: {e}")
         return jsonify({"error": str(e)})
+
+
+@app.route("/api/trades/place", methods=["POST"])
+def place_trade():
+    """Place a new trade."""
+    global bot_instance
+
+    try:
+        # Check if bot is running
+        if bot_instance is None:
+            return jsonify({
+                "success": False,
+                "message": "Trading bot is not running"
+            }), 400
+
+        # Get request data
+        data = request.json
+        symbol = data.get("symbol")
+        direction_str = data.get("direction")
+        quantity = data.get("quantity")
+        entry_price = data.get("entry_price")
+        stop_loss = data.get("stop_loss")
+        take_profit = data.get("take_profit")
+
+        # Validate inputs
+        if not all([symbol, direction_str, quantity, entry_price, stop_loss, take_profit]):
+            return jsonify({
+                "success": False,
+                "message": "Missing required fields"
+            }), 400
+
+        # Convert direction string to enum
+        from models.trade import TradeDirection
+        direction = TradeDirection.LONG if direction_str == "LONG" else TradeDirection.SHORT
+
+        # Place order through broker
+        success, message, order_details = bot_instance.broker.place_market_order(
+            symbol=symbol,
+            direction=direction,
+            quantity=float(quantity),
+            stop_loss=float(stop_loss),
+            take_profit=float(take_profit)
+        )
+
+        if not success:
+            return jsonify({
+                "success": False,
+                "message": message
+            }), 400
+
+        # Create trade object
+        from models.trade import Trade, TradeStatus
+        trade = Trade(
+            symbol=symbol,
+            direction=direction,
+            strategy_name="Manual",
+            entry_price=float(entry_price),
+            stop_loss=float(stop_loss),
+            take_profit=float(take_profit),
+            quantity=float(quantity),
+            entry_time=datetime.now(),
+            status=TradeStatus.PENDING,
+            broker_order_id=order_details.get("order_id") if order_details else None
+        )
+
+        # Update trade with order details
+        if order_details:
+            trade = bot_instance.broker.update_trade_from_order(trade, order_details)
+
+        # Add to active trades
+        bot_instance.active_trades[symbol] = trade
+
+        # Register trade with risk manager
+        bot_instance.risk_manager.register_trade(trade)
+
+        # Send notification
+        bot_instance.notifier.send_trade_entry_notification(
+            symbol=symbol,
+            direction=direction.value,
+            entry_price=float(entry_price),
+            stop_loss=float(stop_loss),
+            take_profit=float(take_profit),
+            quantity=float(quantity),
+            strategy_name="Manual",
+            risk_reward=trade.risk_reward_ratio
+        )
+
+        # Emit trade update event
+        socketio.emit("trade_update", trade.to_dict())
+
+        return jsonify({
+            "success": True,
+            "message": "Trade placed successfully",
+            "trade": trade.to_dict()
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to place trade: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/api/trades/close", methods=["POST"])
+def close_trade():
+    """Close an existing trade."""
+    global bot_instance
+
+    try:
+        # Check if bot is running
+        if bot_instance is None:
+            return jsonify({
+                "success": False,
+                "message": "Trading bot is not running"
+            }), 400
+
+        # Get request data
+        data = request.json
+        symbol = data.get("symbol")
+
+        # Validate inputs
+        if not symbol:
+            return jsonify({
+                "success": False,
+                "message": "Symbol is required"
+            }), 400
+
+        # Check if trade exists
+        if symbol not in bot_instance.active_trades:
+            return jsonify({
+                "success": False,
+                "message": f"No active trade found for {symbol}"
+            }), 404
+
+        # Get current price
+        current_price = bot_instance.get_current_price(symbol)
+
+        # Close trade
+        trade = bot_instance.close_trade(symbol, current_price, "Manual close")
+
+        if not trade:
+            return jsonify({
+                "success": False,
+                "message": f"Failed to close trade for {symbol}"
+            }), 500
+
+        # Emit trade update event
+        socketio.emit("trade_update", trade.to_dict())
+
+        return jsonify({
+            "success": True,
+            "message": "Trade closed successfully",
+            "trade": trade.to_dict()
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to close trade: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @app.route("/api/debug/test_broker_connection", methods=["POST"])

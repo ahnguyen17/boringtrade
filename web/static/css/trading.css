@@ -1,0 +1,78 @@
+/* Trading page styles */
+
+/* Direction buttons */
+.form-check-input[type="radio"] {
+    display: none;
+}
+
+.form-check-input[type="radio"]:checked + .btn-outline-success {
+    background-color: #198754;
+    color: white;
+}
+
+.form-check-input[type="radio"]:checked + .btn-outline-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Risk analysis */
+#risk-amount, #risk-reward {
+    font-weight: bold;
+}
+
+/* Position table */
+.position-table {
+    width: 100%;
+}
+
+.position-table th, .position-table td {
+    padding: 8px;
+}
+
+.position-long {
+    color: #198754;
+}
+
+.position-short {
+    color: #dc3545;
+}
+
+/* Order status */
+.order-status-success {
+    color: #198754;
+}
+
+.order-status-error {
+    color: #dc3545;
+}
+
+.order-status-pending {
+    color: #fd7e14;
+}
+
+/* Action buttons */
+.action-btn {
+    padding: 2px 8px;
+    font-size: 0.8rem;
+}
+
+/* Loading spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.2em;
+}
+
+/* Price refresh button */
+#refresh-price-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 20px;
+    }
+}

@@ -210,6 +210,12 @@ def levels_page():
     return render_template("levels.html")
 
 
+@app.route("/trading")
+def trading_page():
+    """Render the trading page."""
+    return render_template("trading.html")
+
+
 @app.route("/api/config", methods=["GET"])
 def get_config():
     """Get the current configuration."""
@@ -274,6 +280,159 @@ def get_notifications():
 def get_symbols():
     """Get all symbols."""
     return jsonify(SAMPLE_CONFIG["assets"])
+
+
+@app.route("/api/trades/place", methods=["POST"])
+def place_trade():
+    """Place a new trade."""
+    try:
+        # Get request data
+        data = request.json
+        symbol = data.get("symbol")
+        direction = data.get("direction")
+        quantity = data.get("quantity")
+        entry_price = data.get("entry_price")
+        stop_loss = data.get("stop_loss")
+        take_profit = data.get("take_profit")
+
+        # Validate inputs
+        if not all([symbol, direction, quantity, entry_price, stop_loss, take_profit]):
+            return jsonify({
+                "success": False,
+                "message": "Missing required fields"
+            }), 400
+
+        # In a real implementation, we would place the order here
+        # For the sample dashboard, we'll just return a success response
+
+        # Create a sample trade
+        trade_id = f"trade_{len(SAMPLE_TRADES['active_trades']) + 1}"
+        trade = {
+            "id": trade_id,
+            "symbol": symbol,
+            "direction": direction,
+            "strategy_name": "Manual",
+            "entry_price": float(entry_price),
+            "stop_loss": float(stop_loss),
+            "take_profit": float(take_profit),
+            "quantity": float(quantity),
+            "entry_time": datetime.now().isoformat(),
+            "status": "OPEN",
+            "broker_order_id": f"order_{trade_id}"
+        }
+
+        # Add to sample trades
+        SAMPLE_TRADES["active_trades"].append(trade)
+
+        # Add notification
+        notification = {
+            "id": f"notif_{len(SAMPLE_NOTIFICATIONS) + 1}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "trade",
+            "title": "Trade Opened",
+            "message": f"{direction} position opened in {symbol} at {entry_price}"
+        }
+        SAMPLE_NOTIFICATIONS.insert(0, notification)
+
+        return jsonify({
+            "success": True,
+            "message": "Trade placed successfully",
+            "trade": trade
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to place trade: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
+@app.route("/api/trades/close", methods=["POST"])
+def close_trade():
+    """Close an existing trade."""
+    try:
+        # Get request data
+        data = request.json
+        symbol = data.get("symbol")
+
+        # Validate inputs
+        if not symbol:
+            return jsonify({
+                "success": False,
+                "message": "Symbol is required"
+            }), 400
+
+        # Find the trade
+        trade_index = None
+        for i, trade in enumerate(SAMPLE_TRADES["active_trades"]):
+            if trade["symbol"] == symbol:
+                trade_index = i
+                break
+
+        if trade_index is None:
+            return jsonify({
+                "success": False,
+                "message": f"No active trade found for {symbol}"
+            }), 404
+
+        # Get the trade
+        trade = SAMPLE_TRADES["active_trades"][trade_index]
+
+        # Calculate exit price (random value near entry price)
+        entry_price = trade["entry_price"]
+        if trade["direction"] == "LONG":
+            exit_price = entry_price * (1 + random.uniform(-0.01, 0.03))
+        else:
+            exit_price = entry_price * (1 + random.uniform(-0.03, 0.01))
+
+        # Calculate profit/loss
+        if trade["direction"] == "LONG":
+            profit_loss = (exit_price - entry_price) * trade["quantity"]
+        else:
+            profit_loss = (entry_price - exit_price) * trade["quantity"]
+
+        # Determine result
+        if profit_loss > 0:
+            result = "WIN"
+        elif profit_loss < 0:
+            result = "LOSS"
+        else:
+            result = "BREAKEVEN"
+
+        # Update trade
+        trade["exit_price"] = exit_price
+        trade["exit_time"] = datetime.now().isoformat()
+        trade["status"] = "CLOSED"
+        trade["profit_loss_amount"] = profit_loss
+        trade["result"] = result
+
+        # Move to completed trades
+        SAMPLE_TRADES["completed_trades"].insert(0, trade)
+        SAMPLE_TRADES["active_trades"].pop(trade_index)
+
+        # Add notification
+        notification = {
+            "id": f"notif_{len(SAMPLE_NOTIFICATIONS) + 1}",
+            "timestamp": datetime.now().isoformat(),
+            "type": "trade",
+            "title": "Trade Closed",
+            "message": f"{trade['direction']} position closed in {symbol} at {exit_price:.2f} ({result})"
+        }
+        SAMPLE_NOTIFICATIONS.insert(0, notification)
+
+        return jsonify({
+            "success": True,
+            "message": "Trade closed successfully",
+            "trade": trade
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to close trade: {e}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 
 @app.route("/api/candles", methods=["GET"])
