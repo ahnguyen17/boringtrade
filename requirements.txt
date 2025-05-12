@@ -1,0 +1,14 @@
+numpy==1.24.3
+pandas==2.0.2
+matplotlib==3.7.1
+flask==2.3.2
+flask-socketio==5.3.4
+requests==2.31.0
+python-dotenv==1.0.0
+websocket-client==1.5.1
+ccxt==3.1.54
+ta-lib==0.4.26
+pytest==7.3.1
+pytest-mock==3.10.0
+APScheduler==3.10.1
+pytz==2023.3
