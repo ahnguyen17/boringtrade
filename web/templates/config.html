@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoringTrade - Configuration</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">BoringTrade</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/trades">Trades</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/levels">Levels</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/config">Configuration</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="config-form">
+                            <div class="mb-3">
+                                <h6>Broker Settings</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label for="broker" class="form-label">Broker</label>
+                                        <select class="form-select" id="broker" name="broker">
+                                            <option value="tastytrade" {% if config.broker == "tastytrade" %}selected{% endif %}>Tastytrade</option>
+                                            <option value="schwab" {% if config.broker == "schwab" %}selected{% endif %}>Charles Schwab</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>Trading Assets</h6>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <label for="assets" class="form-label">Assets (comma-separated)</label>
+                                        <input type="text" class="form-control" id="assets" name="assets" value="{{ ','.join(config.assets) }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>Strategies</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="orb-enabled" name="orb.enabled" {% if config.orb.enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="orb-enabled">
+                                        Opening Range Breakout (ORB)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="pdh-pdl-enabled" name="pdh_pdl.enabled" {% if config.pdh_pdl.enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="pdh-pdl-enabled">
+                                        Previous Day High/Low (PDH/PDL)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ob-enabled" name="ob.enabled" {% if config.ob.enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="ob-enabled">
+                                        Order Block (OB)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>Risk Management</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label for="risk-per-trade" class="form-label">Risk Per Trade</label>
+                                        <input type="number" class="form-control" id="risk-per-trade" name="risk_per_trade" value="{{ config.risk_per_trade }}" step="0.001" min="0.001" max="0.1">
+                                        <small class="text-muted">Percentage of account (0.01 = 1%)</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="max-daily-loss" class="form-label">Max Daily Loss</label>
+                                        <input type="number" class="form-control" id="max-daily-loss" name="max_daily_loss" value="{{ config.max_daily_loss }}" step="0.001" min="0.001" max="0.2">
+                                        <small class="text-muted">Percentage of account (0.03 = 3%)</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="max-trades-per-day" class="form-label">Max Trades Per Day</label>
+                                        <input type="number" class="form-control" id="max-trades-per-day" name="max_trades_per_day" value="{{ config.max_trades_per_day }}" step="1" min="1" max="20">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="position-size" class="form-label">Position Size</label>
+                                        <input type="number" class="form-control" id="position-size" name="position_size" value="{{ config.position_size }}" step="1" min="1" max="100">
+                                        <small class="text-muted">Number of contracts/shares</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>Timeframes</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label for="execution-timeframe" class="form-label">Execution Timeframe</label>
+                                        <select class="form-select" id="execution-timeframe" name="execution_timeframe">
+                                            <option value="1" {% if config.execution_timeframe == 1 %}selected{% endif %}>1 minute</option>
+                                            <option value="5" {% if config.execution_timeframe == 5 %}selected{% endif %}>5 minutes</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="htf-timeframe" class="form-label">Higher Timeframe</label>
+                                        <select class="form-select" id="htf-timeframe" name="htf_timeframe">
+                                            <option value="15" {% if config.htf_timeframe == 15 %}selected{% endif %}>15 minutes</option>
+                                            <option value="30" {% if config.htf_timeframe == 30 %}selected{% endif %}>30 minutes</option>
+                                            <option value="60" {% if config.htf_timeframe == 60 %}selected{% endif %}>1 hour</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="submit" class="btn btn-primary">Save Configuration</button>
+                                <button type="button" class="btn btn-secondary" id="reset-config-btn">Reset to Default</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/config.js') }}"></script>
+</body>
+</html>

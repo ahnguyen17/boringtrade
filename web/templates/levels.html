@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoringTrade - Price Levels</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">BoringTrade</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/trades">Trades</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/levels">Levels</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/config">Configuration</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Price Levels</h5>
+                        <div>
+                            <button id="refresh-levels-btn" class="btn btn-sm btn-outline-primary">Refresh Levels</button>
+                            <button id="add-manual-level-btn" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#add-level-modal">Add Manual Level</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <label class="input-group-text" for="symbol-filter">Symbol</label>
+                                <select class="form-select" id="symbol-filter">
+                                    <option value="all">All Symbols</option>
+                                </select>
+                                <label class="input-group-text" for="level-type-filter">Level Type</label>
+                                <select class="form-select" id="level-type-filter">
+                                    <option value="all">All Types</option>
+                                    <option value="ORH">Opening Range High (ORH)</option>
+                                    <option value="ORL">Opening Range Low (ORL)</option>
+                                    <option value="PDH">Previous Day High (PDH)</option>
+                                    <option value="PDL">Previous Day Low (PDL)</option>
+                                    <option value="OB_BULLISH">Bullish Order Block</option>
+                                    <option value="OB_BEARISH">Bearish Order Block</option>
+                                    <option value="MANUAL">Manual Level</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="levels-table-container">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Type</th>
+                                        <th>Price</th>
+                                        <th>Created At</th>
+                                        <th>Status</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="levels-table-body">
+                                    <tr>
+                                        <td colspan="7" class="text-center">No price levels found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Price Charts</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="input-group">
+                                <label class="input-group-text" for="chart-symbol">Symbol</label>
+                                <select class="form-select" id="chart-symbol">
+                                    <option value="">Select Symbol</option>
+                                </select>
+                                <label class="input-group-text" for="chart-timeframe">Timeframe</label>
+                                <select class="form-select" id="chart-timeframe">
+                                    <option value="1">1 minute</option>
+                                    <option value="5">5 minutes</option>
+                                    <option value="15">15 minutes</option>
+                                    <option value="60">1 hour</option>
+                                    <option value="1440">1 day</option>
+                                </select>
+                                <button id="load-chart-btn" class="btn btn-primary">Load Chart</button>
+                            </div>
+                        </div>
+                        <div id="chart-container" style="height: 500px;">
+                            <div class="d-flex justify-content-center align-items-center h-100">
+                                <p class="text-muted">Select a symbol and timeframe to load chart</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Level Modal -->
+    <div class="modal fade" id="add-level-modal" tabindex="-1" aria-labelledby="add-level-modal-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="add-level-modal-label">Add Manual Price Level</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-level-form">
+                        <div class="mb-3">
+                            <label for="level-symbol" class="form-label">Symbol</label>
+                            <select class="form-select" id="level-symbol" required>
+                                <option value="">Select Symbol</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="level-price" class="form-label">Price</label>
+                            <input type="number" class="form-control" id="level-price" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="level-description" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="level-description" placeholder="Optional description">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-level-btn">Add Level</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.1/dist/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0/dist/chartjs-adapter-luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.1.1/dist/chartjs-chart-financial.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/levels.js') }}"></script>
+</body>
+</html>

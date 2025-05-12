@@ -49,7 +49,6 @@ The strategy is designed to be mechanical, relying on pre-defined key levels and
         3.  Condition 3: ORL holds as resistance (e.g., bearish confirmation candle forms, price moves down from ORL).
         4.  Action: Enter SHORT.
         5.  Stop Loss: Above the high of the retest candle at ORL, or just above ORL.
- хрони
         6.  Take Profit: Next support, Low of Day (LOD), pre-defined R:R multiple.
     *   **Reversal Variation (False Breakout):**
         *   Example: Price breaks ORH, fails to continue, then breaks back *below* ORH. Now, ORH is treated as potential resistance. Look for a retest of ORH from below for a SHORT entry.

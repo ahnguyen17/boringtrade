@@ -1,6 +1,10 @@
 """
 Web dashboard for the BoringTrade trading bot.
 """
+# Import eventlet first and monkey patch before any other imports
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import sys
 import json
@@ -23,7 +27,7 @@ from utils.logger import setup_logger
 # Create Flask app
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "boringtrade-secret-key"
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
 # Set up logger
 logger = setup_logger(
@@ -82,13 +86,13 @@ def update_config_api():
 def start_bot():
     """Start the trading bot."""
     global bot_instance
-    
+
     try:
         if bot_instance is None:
             # Import here to avoid circular imports
             from main import TradingBot
             bot_instance = TradingBot()
-        
+
         if not bot_instance.is_running:
             bot_instance.start()
             return jsonify({"success": True, "message": "Bot started"})
@@ -103,7 +107,7 @@ def start_bot():
 def stop_bot():
     """Stop the trading bot."""
     global bot_instance
-    
+
     try:
         if bot_instance is not None and bot_instance.is_running:
             bot_instance.stop()
@@ -119,7 +123,7 @@ def stop_bot():
 def get_bot_status():
     """Get the status of the trading bot."""
     global bot_instance
-    
+
     try:
         if bot_instance is None:
             return jsonify({"status": "not_initialized"})
@@ -136,7 +140,7 @@ def get_bot_status():
 def flatten_all():
     """Flatten all positions."""
     global bot_instance
-    
+
     try:
         if bot_instance is not None and bot_instance.is_running:
             bot_instance.flatten_all()
@@ -152,21 +156,21 @@ def flatten_all():
 def get_trades():
     """Get all trades."""
     global bot_instance
-    
+
     try:
         if bot_instance is None:
             return jsonify([])
-        
+
         # Get active trades
         active_trades = [
             trade.to_dict() for trade in bot_instance.active_trades.values()
         ]
-        
+
         # Get completed trades
         completed_trades = [
             trade.to_dict() for trade in bot_instance.completed_trades
         ]
-        
+
         return jsonify({
             "active_trades": active_trades,
             "completed_trades": completed_trades
@@ -180,17 +184,17 @@ def get_trades():
 def get_levels():
     """Get all price levels."""
     global bot_instance
-    
+
     try:
         if bot_instance is None:
             return jsonify([])
-        
+
         # Get levels from all strategies
         all_levels = []
         for strategy in bot_instance.strategies:
             for symbol, levels in strategy.levels.items():
                 all_levels.extend([level.to_dict() for level in levels])
-        
+
         return jsonify(all_levels)
     except Exception as e:
         logger.error(f"Failed to get levels: {e}")
@@ -201,21 +205,87 @@ def get_levels():
 def get_notifications():
     """Get all notifications."""
     global bot_instance
-    
+
     try:
         if bot_instance is None:
             return jsonify([])
-        
+
         # Get notifications
         notifications = bot_instance.notifier.get_notifications()
-        
+
         # Convert datetime objects to strings
         for notification in notifications:
             notification["timestamp"] = notification["timestamp"].isoformat()
-        
+
         return jsonify(notifications)
     except Exception as e:
         logger.error(f"Failed to get notifications: {e}")
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/symbols", methods=["GET"])
+def get_symbols():
+    """Get all symbols."""
+    global bot_instance
+
+    try:
+        if bot_instance is None:
+            # Return default symbols from config if bot is not running
+            return jsonify(CONFIG.get("assets", []))
+
+        # Get symbols from bot
+        symbols = list(bot_instance.symbols)
+        return jsonify(symbols)
+    except Exception as e:
+        logger.error(f"Failed to get symbols: {e}")
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/candles", methods=["GET"])
+def get_candles():
+    """Get candles for a symbol and timeframe."""
+    global bot_instance
+
+    try:
+        # Get query parameters
+        symbol = request.args.get("symbol")
+        timeframe = request.args.get("timeframe")
+
+        if not symbol or not timeframe:
+            return jsonify({"error": "Symbol and timeframe are required"}), 400
+
+        # Convert timeframe to integer
+        try:
+            timeframe = int(timeframe)
+        except ValueError:
+            return jsonify({"error": "Timeframe must be an integer"}), 400
+
+        if bot_instance is None:
+            # Return empty list if bot is not running
+            return jsonify([])
+
+        # Get candles from bot
+        candles = bot_instance.get_historical_candles(symbol, timeframe)
+
+        # Convert candles to dictionaries
+        candle_dicts = []
+        for candle in candles:
+            candle_dict = {
+                "symbol": candle.symbol,
+                "timestamp": candle.timestamp.isoformat(),
+                "open_price": candle.open_price,
+                "high_price": candle.high_price,
+                "low_price": candle.low_price,
+                "close_price": candle.close_price,
+                "volume": candle.volume,
+                "timeframe": candle.timeframe,
+                "is_complete": candle.is_complete
+            }
+            candle_dicts.append(candle_dict)
+
+        return jsonify(candle_dicts)
+    except Exception as e:
+        logger.error(f"Failed to get candles: {e}")
         return jsonify({"error": str(e)})
 
 
@@ -234,14 +304,14 @@ def handle_disconnect():
 def emit_notification(notification: Dict[str, Any]) -> None:
     """
     Emit a notification to connected clients.
-    
+
     Args:
         notification: The notification to emit
     """
     # Convert datetime objects to strings
     notification_copy = notification.copy()
     notification_copy["timestamp"] = notification_copy["timestamp"].isoformat()
-    
+
     # Emit notification
     socketio.emit("notification", notification_copy)
 
@@ -249,7 +319,7 @@ def emit_notification(notification: Dict[str, Any]) -> None:
 def emit_trade_update(trade: Dict[str, Any]) -> None:
     """
     Emit a trade update to connected clients.
-    
+
     Args:
         trade: The trade to emit
     """
@@ -259,7 +329,7 @@ def emit_trade_update(trade: Dict[str, Any]) -> None:
 def emit_level_update(level: Dict[str, Any]) -> None:
     """
     Emit a level update to connected clients.
-    
+
     Args:
         level: The level to emit
     """
@@ -270,16 +340,17 @@ def run_dashboard():
     """Run the web dashboard."""
     # Get dashboard configuration
     dashboard_config = CONFIG["web_dashboard"]
-    
+
     if not dashboard_config["enabled"]:
         logger.info("Web dashboard is disabled")
         return
-    
+
     host = dashboard_config["host"]
     port = dashboard_config["port"]
-    
+
     logger.info(f"Starting web dashboard on {host}:{port}")
-    socketio.run(app, host=host, port=port)
+    print(f"Web dashboard started at http://{host}:{port}")
+    socketio.run(app, host=host, port=port, debug=False, use_reloader=False)
 
 
 if __name__ == "__main__":
