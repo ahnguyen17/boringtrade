@@ -23,7 +23,7 @@
 ### Broker Integrations
 - [x] Broker interface definition
 - [x] Broker factory
-- [ ] Tastytrade API integration (partial implementation)
+- [x] Tastytrade API integration
 - [ ] Charles Schwab API integration (placeholder created)
 
 ### Data Handling
@@ -38,17 +38,13 @@
 ## Next Steps
 
 ### High Priority
-1. Complete the Tastytrade API integration
-   - Implement WebSocket connection for real-time data
-   - Implement order placement and management
-   - Implement position management
 
-2. Enhance the web dashboard
+1. Enhance the web dashboard
    - Add charts for price visualization
    - Improve trade monitoring and management
    - Add configuration editing
 
-3. Add backtesting functionality
+2. Add backtesting functionality
    - Implement historical data loading
    - Implement strategy backtesting
    - Add performance metrics and reporting
@@ -68,7 +64,7 @@
 4. Implement portfolio management and multi-asset correlation analysis
 
 ## Known Issues
-1. The broker API integrations are not fully implemented
+1. The Charles Schwab API integration is not implemented
 2. The web dashboard needs more features and improvements
 3. No backtesting functionality yet
 4. The strategies need more testing with real market data
